@@ -1,0 +1,35 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --runInBand
+      - run: npm run test:e2e
+      - run: npm run build
+      - run: docker compose up --build -d --wait
+      - run: docker compose exec -T app node dist/database/seed.js
+      - run: curl --fail http://localhost:3000/health/ready
+      - name: Compose logs
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop compose
+        if: always()
+        run: docker compose down --volumes
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
