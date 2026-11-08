@@ -13,6 +13,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     bodyParser: false,
+    abortOnError: false,
   });
   app.useLogger(app.get(Logger));
   app.disable('x-powered-by');

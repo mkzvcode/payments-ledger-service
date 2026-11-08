@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ACCOUNTS, LEDGER } from '../common/application/ports';
 import type { AccountRepository, LedgerRepository, JsonObject } from '../common/application/ports';
 import { DomainError } from '../common/domain/domain-error';
-import { entryResponse } from '../common/http/presenters';
+import { entryResponse } from '../common/application/presenters';
 
 @Injectable()
 export class LedgerService {

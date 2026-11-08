@@ -4,7 +4,7 @@ import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreateTransferDto } from '../common/http/dto';
 import { IdempotencyKeyPipe } from '../common/http/idempotency-key.pipe';
-import { transferResponse } from '../common/http/presenters';
+import { transferResponse } from '../common/application/presenters';
 import { ApiProblems, ApiIdempotency, transferExample } from '../common/http/api-responses';
 
 @ApiTags('transfers')

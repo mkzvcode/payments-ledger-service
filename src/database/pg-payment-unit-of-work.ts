@@ -57,7 +57,10 @@ class PgPaymentSession implements PaymentSession {
 
   async updateBalance(account: Account, amount: bigint): Promise<void> {
     const updated = await this.manager.query<{ id: string }[]>(
-      `UPDATE accounts SET balance = $1, version = version + 1 WHERE id = $2 AND version = $3 RETURNING id`,
+      `WITH updated AS (
+         UPDATE accounts SET balance = $1, version = version + 1
+         WHERE id = $2 AND version = $3 RETURNING id
+       ) SELECT id FROM updated`,
       [amount.toString(), account.id, account.version],
     );
     if (updated.length !== 1) {

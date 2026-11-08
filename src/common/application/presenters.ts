@@ -1,7 +1,7 @@
 import type { Account } from '../../accounts/domain/account';
 import type { Transfer } from '../../transfers/domain/transfer';
 import type { LedgerEntry } from '../../ledger/domain/ledger-entry';
-import type { JsonObject } from '../application/ports';
+import type { JsonObject } from './ports';
 
 export function accountResponse(account: Account): JsonObject {
   return {

@@ -4,9 +4,10 @@ import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
-import { createApp } from '../src/bootstrap';
 import { createDataSource } from '../src/database/data-source';
 import { validateEnvironment } from '../src/common/config/environment';
+import { PgPaymentUnitOfWork } from '../src/database/pg-payment-unit-of-work';
+import { PgAccountRepository } from '../src/database/pg-repositories';
 
 interface AccountBody {
   id: string;
@@ -60,6 +61,7 @@ describe('payments API / PostgreSQL 16', () => {
     } finally {
       await migrations.destroy();
     }
+    const { createApp } = await import('../src/bootstrap');
     app = await createApp();
     await app.init();
     db = app.get(DataSource);
@@ -375,5 +377,41 @@ describe('payments API / PostgreSQL 16', () => {
       await db.query(`SELECT a.id FROM accounts a LEFT JOIN ledger_entries e ON e.account_id = a.id
       GROUP BY a.id HAVING a.balance <> coalesce(sum(CASE e.direction WHEN 'CREDIT' THEN e.amount::numeric ELSE -e.amount::numeric END), 0)`);
     expect(mismatches).toEqual([]);
+  });
+
+  it('rejects a stale optimistic version even inside a locked transaction', async () => {
+    const a = await account('10');
+    const stale = await new PgAccountRepository(db).find(a.id);
+    if (!stale) throw new Error('Missing fixture');
+    await deposit(a.id, '1').expect(201);
+    await expect(
+      new PgPaymentUnitOfWork(db).run(async (session) => {
+        await session.lockAccounts([a.id]);
+        await session.updateBalance(stale, 1n);
+      }),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    expect(await balance(a.id)).toBe(11n);
+  });
+
+  it('rolls back a timed-out operation and permits retry with the same key', async () => {
+    const a = await account('10');
+    const b = await account();
+    const key = randomUUID();
+    const runner = db.createQueryRunner();
+    await runner.connect();
+    await runner.startTransaction();
+    try {
+      await runner.query('SELECT id FROM accounts WHERE id = $1 FOR UPDATE', [a.id]);
+      const response = await transfer(a.id, b.id, '1', key).expect(503);
+      expect(response.headers['retry-after']).toBe('1');
+      const rows = await db.query('SELECT key FROM idempotency_requests WHERE key = $1', [key]);
+      expect(rows).toEqual([]);
+    } finally {
+      await runner.rollbackTransaction();
+      await runner.release();
+    }
+    await transfer(a.id, b.id, '1', key).expect(201);
+    expect(await balance(a.id)).toBe(9n);
+    expect(await balance(b.id)).toBe(1n);
   });
 });

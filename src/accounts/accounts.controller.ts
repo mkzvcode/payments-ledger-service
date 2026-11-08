@@ -5,7 +5,7 @@ import { AccountsService } from './accounts.service';
 import { PaymentsService } from '../transfers/payments.service';
 import { CreateAccountDto, AmountDto } from '../common/http/dto';
 import { IdempotencyKeyPipe } from '../common/http/idempotency-key.pipe';
-import { accountResponse } from '../common/http/presenters';
+import { accountResponse } from '../common/application/presenters';
 import {
   ApiProblems,
   ApiIdempotency,

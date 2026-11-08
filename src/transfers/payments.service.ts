@@ -14,7 +14,7 @@ import type { Account } from '../accounts/domain/account';
 import type { Transfer } from './domain/transfer';
 import { planTransfer, planDeposit } from './domain/transfer-rules';
 import { generateEntries } from '../ledger/domain/ledger-entry';
-import { transferResponse } from '../common/http/presenters';
+import { transferResponse } from '../common/application/presenters';
 
 export interface PaymentCommand {
   kind: Transfer['kind'];
