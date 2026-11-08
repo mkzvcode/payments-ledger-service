@@ -17,7 +17,11 @@ export interface TransferRepository {
 }
 
 export interface LedgerRepository {
-  list(accountId: string, limit: number, before?: string): Promise<LedgerEntry[]>;
+  list(
+    accountId: string,
+    limit: number,
+    before?: string,
+  ): Promise<(LedgerEntry & { sequence: string })[]>;
 }
 
 export interface PaymentSession {
